@@ -12,30 +12,48 @@ import Alamofire
 class APIService {
     let weatherURL = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?"
     private let apiKey = Bundle.main.object(forInfoDictionaryKey: "API_KEY") as? String
-    func fetchWeather(_ nx: Int, _ ny: Int) {
-        guard let apiKey = apiKey else { return }
-        let dateTime = setDateTime()
-        let url = "\(weatherURL)serviceKey=\(apiKey)&base_date=\(dateTime.date)&base_time=\(dateTime.time)&nx=\(nx)&ny=\(ny)&numOfRows=1000&pageNo=1&dataType=JSON"
+
+    func fetchWeather() -> Observable<Data> {
+        return Observable.create() { observer in
+            AF.request(self.createURL()).responseData { response in
+                switch response.result {
+                    case .success(let data):
+                        observer.onNext(data)
+                        observer.onCompleted()
+                    case .failure(let err):
+                        observer.onError(err)
+                }
+            }
+            return Disposables.create()
+        }
+    }
+    
+    private func createURL() -> String {
+        guard let apiKey = self.apiKey else {
+            return ""
+        }
+        let dateTime = self.setDateTime()
+        let url = "\(self.weatherURL)serviceKey=\(apiKey)&base_date=\(dateTime.date)&base_time=\(dateTime.time)&nx=\(UserDefaults.grid_x)&ny=\(UserDefaults.grid_y)&numOfRows=20&pageNo=1&dataType=JSON"
         print("///////////////////")
         print(url)
         print("///////////////////")
-
-        AF.request(url).responseDecodable(of: WeatherData.self) { response in
-            print(response)
-        }
+        return url
     }
-     func setDateTime() -> (date: String, time: String) {
-        let now = Date.now
+
+    private func setDateTime() -> (date: String, time: String) {
+        var now = Date.now
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd"
-        var date = formatter.string(from: now)
-        formatter.dateFormat = "HHmm"
+        formatter.timeZone = TimeZone(abbreviation: "GMT+9")
+        formatter.dateFormat = "HH"
         var time = formatter.string(from: now)
         while Int(time)! % 3 != 2 {
-            var newDate = now.addingTimeInterval(-3600)
+            now = now.addingTimeInterval(-3600)
             time = formatter.string(from: now)
         }
-
-        return (date, time)
+        formatter.dateFormat = "yyyyMMdd"
+        let baseDate = formatter.string(from: now)
+        formatter.dateFormat = "HHmm"
+        let baseTime = formatter.string(from: now)
+        return (baseDate, baseTime)
     }
 }

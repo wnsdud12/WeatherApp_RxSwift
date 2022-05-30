@@ -20,11 +20,6 @@ class WeatherViewModel {
         let useCategory = ["TMX", "TMN", "TMP", "SKY", "PTY", "PCP", "SNO", "POP"]
         var weatherModels: [WeatherModel] = []
         _ = APIService().fetchWeather()
-            .debug()
-            .map { data -> WeatherData in
-                let weatherData = try! JSONDecoder().decode(WeatherData.self, from: data)
-                return weatherData
-            }
             .map { weatherData -> [WeatherModel] in
                 var weatherValue: WeatherValue = [:]
                 let items = weatherData.response.body.items.item.filter { useCategory.contains($0.category) }
@@ -64,13 +59,15 @@ class WeatherViewModel {
         }()
         // 이미지 생성
         if value["PTY"] == "0" /* 비나 눈 등 없음 */ {
-            sky = value["SKY"]!
             switch value["SKY"] {
                 case "1": // 맑음
+                    sky = "맑음"
                     weatherImg = isDay ? UIImage(named: "sunny.png") : UIImage(named: "night.png")
                 case "3": // 구름많음
+                    sky = "구름많음"
                     weatherImg = isDay ? UIImage(named: "cloud_sun.png")  :UIImage(named: "cloud_night.png")
                 case "4": // 흐림
+                    sky = "흐림"
                     weatherImg =  UIImage(named: "cloudy.png")
                 default:
                     fatalError("SKY에 이상한값")
@@ -79,13 +76,17 @@ class WeatherViewModel {
             sky = value["PTY"]!
             switch value["PTY"] {
                 case "1": // 비
+                    sky = "비"
                     weatherImg = UIImage(named: "rain.png")
                 case "2": // 비 또는 눈
+                    sky = "비/눈"
                     weatherImg = UIImage(named: "rainyORsnowy.png")
                 case "3": // 눈
+                    sky = "눈"
                     weatherImg = UIImage(named: "snow.png")
                     pcp = value["SNO"]!
                 case "4": // 소나기
+                    sky = "소나기"
                     weatherImg = UIImage(named: "rain_shower.png")
                 default:
                     fatalError("PTY값에 이상한값")

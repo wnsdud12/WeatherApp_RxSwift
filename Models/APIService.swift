@@ -13,9 +13,9 @@ class APIService {
     let weatherURL = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?"
     private let apiKey = Bundle.main.object(forInfoDictionaryKey: "API_KEY") as? String
 
-    func fetchWeather() -> Observable<Data> {
+    func fetchWeather() -> Observable<WeatherData> {
         return Observable.create() { observer in
-            AF.request(self.createURL()).responseData { response in
+            AF.request(self.createURL()).responseDecodable(of: WeatherData.self, queue: .global()) { response in
                 switch response.result {
                     case .success(let data):
                         observer.onNext(data)
@@ -33,7 +33,7 @@ class APIService {
             return ""
         }
         let dateTime = self.setDateTime()
-        let url = "\(self.weatherURL)serviceKey=\(apiKey)&base_date=\(dateTime.date)&base_time=\(dateTime.time)&nx=\(UserDefaults.grid_x)&ny=\(UserDefaults.grid_y)&numOfRows=20&pageNo=1&dataType=JSON"
+        let url = "\(self.weatherURL)serviceKey=\(apiKey)&base_date=\(dateTime.date)&base_time=\(dateTime.time)&nx=\(UserDefaults.grid_x)&ny=\(UserDefaults.grid_y)&numOfRows=1000&pageNo=1&dataType=JSON"
         print("///////////////////")
         print(url)
         print("///////////////////")

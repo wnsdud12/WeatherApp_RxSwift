@@ -51,7 +51,7 @@ class WeatherViewModel {
         var sky: String = ""
         var pcp: String = value["PCP"]!
         let isDay: Bool = {
-            if (6...20).contains(time.toInt()) {
+            if (6...20).contains(time.toInt()/100) {
                 return true
             } else {
                 return false
@@ -65,7 +65,7 @@ class WeatherViewModel {
                     weatherImg = isDay ? UIImage(named: "sunny.png") : UIImage(named: "night.png")
                 case "3": // 구름많음
                     sky = "구름많음"
-                    weatherImg = isDay ? UIImage(named: "cloud_sun.png")  :UIImage(named: "cloud_night.png")
+                    weatherImg = isDay ? UIImage(named: "cloud_sun.png") : UIImage(named: "cloud_night.png")
                 case "4": // 흐림
                     sky = "흐림"
                     weatherImg =  UIImage(named: "cloudy.png")

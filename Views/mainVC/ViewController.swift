@@ -8,34 +8,50 @@
 import UIKit
 import Foundation
 import RxSwift
+import RxDataSources
 import RxCocoa
 
 class ViewController: UIViewController {
 
-    let cellId = "WeatherTableViewCell"
-
     let viewModel = WeatherViewModel()
     let disposeBag = DisposeBag()
+    private lazy var dataSource = self.getDataSource()
 
     // MARK: - Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
-        test.text = UserDefaults.address
+
+        weatherTable.delegate = dataSource as? UITableViewDelegate
         viewModel.weatherObservable
-            .observe(on: MainScheduler.instance)
-            .bind(to: weatherTable.rx.items(cellIdentifier: cellId,
-                                            cellType: WeatherTableViewCell.self)) {
-                index, item, cell in
-                cell.time.text = "\(item.time.toInt() / 100)" + "시"
-                cell.tmp.text = item.tmp
-                cell.skyImg.image = item.weatherImg
-                cell.sky.text = item.sky
-                cell.pcp.text = item.pcp
-                cell.pop.text = item.pop
-            }
+            .bind(to: weatherTable.rx.items(dataSource: dataSource))
             .disposed(by: disposeBag)
+
     }
+
+    private func getDataSource() -> RxTableViewSectionedReloadDataSource<WeatherSection> {
+        let dataSource = CustomHeaderRxTableViewSectionedReloadDataSource<WeatherSection>(
+            configureCell: { dataSource, tableView, indexPath, weather in
+                let cell = tableView.dequeueReusableCell(withIdentifier: WeatherTableViewCell.id, for: indexPath) as! WeatherTableViewCell
+                cell.time.text = weather.time
+                cell.tmp.text = weather.tmp
+                cell.sky.text = weather.sky
+                cell.skyImg.image = weather.weatherImg
+                cell.pcp.text = weather.pcp
+                cell.pop.text = weather.pop
+                return cell
+            },
+            configureHeaderView: { dataSource, tableView, section, weatherSection in
+                let headerCell = tableView.dequeueReusableCell(withIdentifier: HeaderCell.id, for: IndexPath(row: 0, section: section)) as! HeaderCell
+                headerCell.date.text = weatherSection.date
+                headerCell.tmx.text = weatherSection.tmx
+                headerCell.tmn.text = weatherSection.tmn
+                return headerCell
+            }
+        )
+        return dataSource
+    }
+
 
     // MARK: - Interface Builder Links
 

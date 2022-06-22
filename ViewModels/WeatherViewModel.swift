@@ -13,39 +13,47 @@ typealias WeatherValue = [String: String] // key : 자료구분문자(category),
 
 
 class WeatherViewModel {
-    var weatherObservable = BehaviorSubject<[WeatherModel]>(value: [])
-    //lazy var test = weatherObservable.map{$0.first?.sky ?? "기다리는중"}
+    var weatherObservable = BehaviorSubject<[WeatherSection]>(value: [])
 
     init() {
         let useCategory = ["TMX", "TMN", "TMP", "SKY", "PTY", "PCP", "SNO", "POP"]
-        var weatherModels: [WeatherModel] = []
+        var weatherSections: [WeatherSection] = []
         _ = APIService().fetchWeather()
-            .map { weatherData -> [WeatherModel] in
+            .retry(3)
+            .map { weatherData -> [WeatherSection] in
                 var weatherValue: WeatherValue = [:]
+                var weatherModels: [WeatherModel] = []
                 let items = weatherData.response.body.items.item.filter { useCategory.contains($0.category) }
-                var date: String = items[0].fcstDate
-                var time: String = items[0].fcstTime
-                for i in items.indices {
-                    let category = items[i].category
-                    let value = items[i].fcstValue
-                    if time == items[i].fcstTime {
-                        weatherValue[category] = value
-                    } else {
-                        print(weatherValue)
-                        weatherModels.append(self.createWeatherModel(date, time, weatherValue))
+                let dates = Array(Set(items.map{$0.fcstDate})).sorted()
+                var time = ""
+                var tmx = ""
+                var tmn = ""
+                for i in dates {
+                    let values = items.filter{$0.fcstDate == i}
+
+                    for j in Array(Set(values.map{$0.fcstTime})).sorted() {
+                        time = j
+                        let value = values.filter{$0.fcstTime == j}
+                        value.forEach{weatherValue[$0.category] = $0.fcstValue}
+                        print(values)
+                        if let _tmx = weatherValue["TMX"] { tmx = _tmx }
+                        if let _tmn = weatherValue["TMN"] { tmn = _tmn }
+                        weatherModels.append(self.createWeatherModel(i, time, weatherValue))
                         weatherValue = [:]
-                        weatherValue[category] = value
-                        time = items[i].fcstTime
-                        date = items[i].fcstDate
                     }
+
+                    if tmx == "" { tmx = "-" }
+                    if tmn == "" { tmn = "-" }
+                    weatherSections.append(WeatherSection(date: i, tmx: tmx, tmn: tmn, items: weatherModels))
+                    weatherModels = []
                 }
-                print("///////////////")
-                print(weatherModels)
-                print("///////////////")
-                return weatherModels
+                print(weatherSections)
+                return weatherSections
             }
             .bind(to: weatherObservable)
     }
+}
+extension WeatherViewModel {
     private func createWeatherModel(_ date: String, _ time: String, _ value: WeatherValue) -> WeatherModel {
         var weatherImg: UIImage?
         var sky: String = ""

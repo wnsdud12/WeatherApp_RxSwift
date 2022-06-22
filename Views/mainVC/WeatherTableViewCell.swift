@@ -10,6 +10,8 @@ import RxSwift
 
 class WeatherTableViewCell: UITableViewCell {
 
+    static let id = "ContentCell"
+
     // MARK: - InterfaceBuilder Links
     
     @IBOutlet weak var time: UILabel!
